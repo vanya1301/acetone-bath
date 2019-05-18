@@ -1,27 +1,41 @@
 #include "BluetoothSerial.h"
 #include <string>
-#include "time.h"
+//#include "time.h"
 
 using namespace std;
 
 #define ONE_WIRE_BUS 12
 #define TEMP_SENS 34
 BluetoothSerial ESP_BT;
+hw_timer_t *timer = NULL;
 int incoming;
 int LED_BUILTIN = 14;
 String command = "";
 String value = "";
 int temp = 0;
-int duration;
+int duration = 0;
 int tempSensor = 1;
-int i = 0;
+int seconds = 0;
 bool processRunning = false;
+
+void IRAM_ATTR onTimer()
+{
+  if (--seconds < 0)
+  {
+    processRunning = false;
+  }
+}
 
 void setup()
 {
   Serial.begin(115200);
   ESP_BT.begin("ESP32_LED_Control");
   Serial.println("Bluetooth Device is Ready to Pair");
+
+  timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000000, true);
+
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
   //sensors.begin();
@@ -47,7 +61,8 @@ void loop()
           command.setCharAt(command.lastIndexOf("T"), ' ');
           command.trim();
           temp = command.toInt();
-         // Serial.println(temp);
+
+          // Serial.println(temp);
           command = "";
         }
         if (command.startsWith("D"))
@@ -55,6 +70,8 @@ void loop()
           command.setCharAt(command.lastIndexOf("D"), ' ');
           command.trim();
           duration = command.toInt();
+          seconds = duration * 60;
+          timerAlarmEnable(timer);
           //Serial.println(duration);
           command = "";
         }
@@ -71,7 +88,8 @@ void loop()
 
     if (processRunning == true)
     {
-      Serial.println(command);
+      Serial.print(seconds);
+      Serial.println(" sec");
       Serial.println(tempSensor);
       ESP_BT.println(tempSensor);
       if (tempSensor < temp)
@@ -86,6 +104,7 @@ void loop()
     else
     {
       digitalWrite(LED_BUILTIN, LOW);
+      ESP_BT.println("s");
     }
   }
 
