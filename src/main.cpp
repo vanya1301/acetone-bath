@@ -16,10 +16,36 @@ bool processRunning = false;
 
 void IRAM_ATTR onTimer()
 {
-  if (--seconds < 0)
+  if (seconds > 0)
+  {
+    seconds--;
+    /*Serial.print(seconds);
+    Serial.println(" sec");
+    Serial.println(tempSensor);
+    ESP_BT.print("t");
+    ESP_BT.println(tempSensor);
+    ESP_BT.print("m");
+    ESP_BT.println(seconds);*/
+  }
+  else if (processRunning)
   {
     processRunning = false;
+    Serial.println("Done");
+    //ESP_BT.println("D");
+    //timerEnd(timer);
   }
+}
+
+void checkConnection()
+{
+  while (!ESP_BT.hasClient())
+  {
+    //Serial.print(".");
+    //delay(100);
+  }
+  Serial.println("Device connected.");
+  //delay(1000);
+  ESP_BT.println("R");
 }
 
 void setup()
@@ -31,14 +57,11 @@ void setup()
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, 1000000, true);
+  timerAlarmEnable(timer);
 
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
-  while (!ESP_BT.hasClient())
-  {
-    Serial.print(".");
-    delay(1000);
-  }
+  checkConnection();
   //sensors.begin();
 }
 
@@ -57,6 +80,7 @@ void loop()
 
       if (command.startsWith("T"))
       {
+
         command.setCharAt(command.lastIndexOf("T"), ' ');
         command.trim();
         temp = command.toInt();
@@ -70,7 +94,7 @@ void loop()
         command.trim();
         duration = command.toInt();
         seconds = duration * 60;
-        timerAlarmEnable(timer);
+
         //Serial.println(duration);
         command = "";
       }
@@ -85,7 +109,7 @@ void loop()
     }
   }
 
-  if (processRunning == true)
+  if (processRunning == true && seconds > 0)
   {
     Serial.print(seconds);
     Serial.println(" sec");
@@ -93,7 +117,7 @@ void loop()
     ESP_BT.print("t");
     ESP_BT.println(tempSensor);
     ESP_BT.print("m");
-    ESP_BT.println(seconds / 60 + 1);
+    ESP_BT.println(seconds);
     if (tempSensor < temp)
     {
       digitalWrite(LED_BUILTIN, HIGH);
@@ -106,7 +130,13 @@ void loop()
   else
   {
     digitalWrite(LED_BUILTIN, LOW);
-    ESP_BT.println("s");
+
+    //ESP_BT.println("s");
+  }
+
+  if (!ESP_BT.hasClient() && !processRunning)
+  {
+    checkConnection();
   }
 
   delay(1000);
