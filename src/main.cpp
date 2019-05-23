@@ -4,9 +4,9 @@
 using namespace std;
 
 #define TEMP_SENS 34
+#define LED_BUILTIN 14
 BluetoothSerial ESP_BT;
 hw_timer_t *timer = NULL;
-int LED_BUILTIN = 14;
 String command = "";
 int temp = 0;
 int duration = 0;
@@ -19,20 +19,12 @@ void IRAM_ATTR onTimer()
   if (seconds > 0)
   {
     seconds--;
-    /*Serial.print(seconds);
-    Serial.println(" sec");
-    Serial.println(tempSensor);
-    ESP_BT.print("t");
-    ESP_BT.println(tempSensor);
-    ESP_BT.print("m");
-    ESP_BT.println(seconds);*/
   }
   else if (processRunning)
   {
     processRunning = false;
     Serial.println("Done");
-    //ESP_BT.println("D");
-    //timerEnd(timer);
+    seconds = 0;
   }
 }
 
@@ -40,11 +32,10 @@ void checkConnection()
 {
   while (!ESP_BT.hasClient())
   {
-    //Serial.print(".");
-    //delay(100);
+    Serial.print(".");
+    delay(100);
   }
   Serial.println("Device connected.");
-  //delay(1000);
   ESP_BT.println("R");
 }
 
@@ -62,7 +53,6 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
   checkConnection();
-  //sensors.begin();
 }
 
 void loop()
@@ -130,8 +120,6 @@ void loop()
   else
   {
     digitalWrite(LED_BUILTIN, LOW);
-
-    //ESP_BT.println("s");
   }
 
   if (!ESP_BT.hasClient() && !processRunning)
