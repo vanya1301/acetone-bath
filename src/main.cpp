@@ -4,7 +4,8 @@
 using namespace std;
 
 #define TEMP_SENS 34
-#define LED_BUILTIN 14
+#define HEATER 14
+#define FAN 12
 BluetoothSerial ESP_BT;
 hw_timer_t *timer = NULL;
 String command = "";
@@ -13,6 +14,7 @@ int duration = 0;
 int tempSensor = 1;
 int seconds = 0;
 bool processRunning = false;
+bool fanRunning = false;
 
 void IRAM_ATTR onTimer()
 {
@@ -23,6 +25,7 @@ void IRAM_ATTR onTimer()
   else if (processRunning)
   {
     processRunning = false;
+    fanRunning = false;
     Serial.println("Done");
     seconds = 0;
   }
@@ -50,7 +53,8 @@ void setup()
   timerAlarmWrite(timer, 1000000, true);
   timerAlarmEnable(timer);
 
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(HEATER, OUTPUT);
+  pinMode(FAN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
   checkConnection();
 }
@@ -65,12 +69,14 @@ void loop()
     if (command.endsWith("|"))
     {
       processRunning = true;
+
       command.setCharAt(command.lastIndexOf("|"), ' ');
       command.trim();
 
       if (command.startsWith("T"))
       {
-
+        
+        
         command.setCharAt(command.lastIndexOf("T"), ' ');
         command.trim();
         temp = command.toInt();
@@ -91,6 +97,8 @@ void loop()
       if (command == "s")
       {
         processRunning = false;
+        fanRunning = false;
+        digitalWrite(FAN, LOW);
         Serial.println("Stop");
         command = "";
       }
@@ -101,25 +109,36 @@ void loop()
 
   if (processRunning == true && seconds > 0)
   {
+
     Serial.print(seconds);
     Serial.println(" sec");
-    Serial.println(tempSensor);
+    Serial.print(tempSensor);
+   
     ESP_BT.print("t");
     ESP_BT.println(tempSensor);
     ESP_BT.print("m");
     ESP_BT.println(seconds);
+    if(!fanRunning)
+    {
+      fanRunning = true;
+      digitalWrite(FAN,HIGH);
+    }
+
     if (tempSensor < temp)
     {
-      digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(HEATER, HIGH);
+      Serial.println("+");
     }
     else
     {
-      digitalWrite(LED_BUILTIN, LOW);
+      digitalWrite(HEATER, LOW);
+      Serial.println("-");
     }
   }
   else
   {
-    digitalWrite(LED_BUILTIN, LOW);
+    digitalWrite(HEATER, LOW);
+    digitalWrite(FAN, LOW);
   }
 
   if (!ESP_BT.hasClient() && !processRunning)
