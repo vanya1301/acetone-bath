@@ -27,7 +27,7 @@ void IRAM_ATTR onTimer()
     processRunning = false;
     fanRunning = false;
     Serial.println("Done");
-    seconds = 0;
+    seconds = 100;
   }
 }
 
@@ -75,22 +75,23 @@ void loop()
 
       if (command.startsWith("T"))
       {
-        
-        
+       
         command.setCharAt(command.lastIndexOf("T"), ' ');
         command.trim();
         temp = command.toInt();
-
         // Serial.println(temp);
         command = "";
       }
-      if (command.startsWith("D"))
+      else if (command.startsWith("D"))
       {
         command.setCharAt(command.lastIndexOf("D"), ' ');
         command.trim();
         duration = command.toInt();
         seconds = duration * 60;
-
+         if(!timerStarted(timer))
+        {
+          timerStart(timer);
+        }
         //Serial.println(duration);
         command = "";
       }
@@ -101,6 +102,22 @@ void loop()
         digitalWrite(FAN, LOW);
         Serial.println("Stop");
         command = "";
+      }
+      else if(command == "P")
+      {
+        processRunning = false;
+        fanRunning = false;
+        digitalWrite(FAN, LOW);
+        timerStop(timer);
+        Serial.println("Pause");
+      }
+      if(command == "C")
+      {
+        processRunning = true;
+        fanRunning = false;
+        digitalWrite(FAN, HIGH);
+        timerStart(timer);
+        Serial.println("Continue");
       }
 
       command = "";
