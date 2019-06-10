@@ -82,7 +82,7 @@ void loop()
         // Serial.println(temp);
         command = "";
       }
-      else if (command.startsWith("D"))
+       if (command.startsWith("D"))
       {
         command.setCharAt(command.lastIndexOf("D"), ' ');
         command.trim();
@@ -100,10 +100,12 @@ void loop()
         processRunning = false;
         fanRunning = false;
         digitalWrite(FAN, LOW);
+        seconds=0;
+        tempSensor=0;
         Serial.println("Stop");
         command = "";
       }
-      else if(command == "P")
+       if(command == "P")
       {
         processRunning = false;
         fanRunning = false;
