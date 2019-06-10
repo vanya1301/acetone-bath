@@ -9,12 +9,16 @@ using namespace std;
 BluetoothSerial ESP_BT;
 hw_timer_t *timer = NULL;
 String command = "";
+const int freq = 5000;
+const int heaterChannel = 0;
+const int resolution = 8;
 int temp = 0;
 int duration = 0;
 int tempSensor = 1;
 int seconds = 0;
 bool processRunning = false;
 bool fanRunning = false;
+unsigned int heaterPower = 0;
 
 void IRAM_ATTR onTimer()
 {
@@ -26,6 +30,7 @@ void IRAM_ATTR onTimer()
   {
     processRunning = false;
     fanRunning = false;
+    digitalWrite(FAN, LOW);
     Serial.println("Done");
     seconds = 100;
   }
@@ -53,7 +58,9 @@ void setup()
   timerAlarmWrite(timer, 1000000, true);
   timerAlarmEnable(timer);
 
-  pinMode(HEATER, OUTPUT);
+  //pinMode(HEATER, OUTPUT);
+  ledcSetup(heaterChannel, freq, resolution);
+  ledcAttachPin(HEATER, heaterChannel);
   pinMode(FAN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
   checkConnection();
@@ -75,20 +82,20 @@ void loop()
 
       if (command.startsWith("T"))
       {
-       
+
         command.setCharAt(command.lastIndexOf("T"), ' ');
         command.trim();
         temp = command.toInt();
         // Serial.println(temp);
         command = "";
       }
-       if (command.startsWith("D"))
+      if (command.startsWith("D"))
       {
         command.setCharAt(command.lastIndexOf("D"), ' ');
         command.trim();
         duration = command.toInt();
         seconds = duration * 60;
-         if(!timerStarted(timer))
+        if (!timerStarted(timer))
         {
           timerStart(timer);
         }
@@ -100,12 +107,12 @@ void loop()
         processRunning = false;
         fanRunning = false;
         digitalWrite(FAN, LOW);
-        seconds=0;
-        tempSensor=0;
+        seconds = 0;
+        tempSensor = 0;
         Serial.println("Stop");
         command = "";
       }
-       if(command == "P")
+      if (command == "P")
       {
         processRunning = false;
         fanRunning = false;
@@ -113,7 +120,7 @@ void loop()
         timerStop(timer);
         Serial.println("Pause");
       }
-      if(command == "C")
+      if (command == "C")
       {
         processRunning = true;
         fanRunning = false;
@@ -132,18 +139,18 @@ void loop()
     Serial.print(seconds);
     Serial.println(" sec");
     Serial.print(tempSensor);
-   
+
     ESP_BT.print("t");
     ESP_BT.println(tempSensor);
     ESP_BT.print("m");
     ESP_BT.println(seconds);
-    if(!fanRunning)
+    if (!fanRunning)
     {
       fanRunning = true;
-      digitalWrite(FAN,HIGH);
+      digitalWrite(FAN, HIGH);
     }
 
-    if (tempSensor < temp)
+    /*if (tempSensor < temp)
     {
       digitalWrite(HEATER, HIGH);
       Serial.println("+");
@@ -152,12 +159,26 @@ void loop()
     {
       digitalWrite(HEATER, LOW);
       Serial.println("-");
+    }*/
+    heaterPower = ((temp - tempSensor) * 10);
+    if (temp - tempSensor < 1)
+    {
+      heaterPower = 10;
     }
+    else if ((temp - tempSensor) * 10 > 255)
+    {
+      heaterPower = 255;
+    }
+    Serial.println();
+    Serial.print("Heater power: ");
+    Serial.println(heaterPower);
+    ledcWrite(heaterChannel, heaterPower);
   }
   else
   {
-    digitalWrite(HEATER, LOW);
-    digitalWrite(FAN, LOW);
+    //digitalWrite(HEATER, LOW);
+    ledcWrite(heaterChannel, 0);
+    //digitalWrite(FAN, LOW);
   }
 
   if (!ESP_BT.hasClient() && !processRunning)
