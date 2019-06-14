@@ -63,7 +63,7 @@ void IRAM_ATTR checkConnection()
   }
   display.clear();
   display.drawString(20, 0, "Client");
-  display.drawString(0, 20, "Connected");
+  display.drawString(0, 30, "Connected");
   display.display();
 
   Serial.println("Device connected.");
@@ -86,7 +86,7 @@ void setup()
   display.setFont(ArialMT_Plain_24);
 
   display.drawString(50, 0, "No");
-  display.drawString(10, 20, "connection");
+  display.drawString(10, 30, "connection");
   display.display();
   /*display.drawString(0, 0, "ACETONE");
   display.drawString(20, 40, "BATH");
@@ -97,6 +97,7 @@ void setup()
 
   pinMode(FAN, OUTPUT);
   pinMode(TEMP_SENS, INPUT);
+  adcAttachPin(TEMP_SENS);
 
   checkConnection();
 }
@@ -105,6 +106,7 @@ void loop()
 {
   display.clear();
   tempSensor = (analogRead(TEMP_SENS) / 4096.0) * 500.0;
+  //tempSensor = analogRead(TEMP_SENS) /9.31;
 
   if (ESP_BT.available())
   {
@@ -180,11 +182,11 @@ void loop()
     Serial.print(tempSensor);
 
     ESP_BT.print("t");
-    ESP_BT.println(tempSensor);
+    ESP_BT.println((int)tempSensor);
     ESP_BT.print("m");
     ESP_BT.println(seconds);
 
-    display.drawString(0, 0, "Temp:" + String(tempSensor) + " °C");
+    display.drawString(0, 0, "Temp:" + String((int)tempSensor) + " °C");
 
     if (seconds > 60)
       display.drawString(0, 30, "Time:" + String(seconds / 60 + 1) + " min.");
