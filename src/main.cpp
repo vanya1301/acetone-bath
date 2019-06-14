@@ -3,7 +3,7 @@
 
 using namespace std;
 
-#define TEMP_SENS 34
+#define TEMP_SENS 36
 #define HEATER 14
 #define FAN 12
 BluetoothSerial ESP_BT;
