@@ -32,38 +32,37 @@ void IRAM_ATTR onTimer()
   {
     seconds--;
   }
-  else if (processRunning)
+  /*else if (processRunning && seconds == 0)
   {
     processRunning = false;
     fanRunning = false;
     digitalWrite(FAN, LOW);
     Serial.println("Done");
-
-    //display.drawString(20, 0, "FINISHED");
-    //display.display();
+    //display.clear();
+    display.drawString(20, 0, "Finished");
+    display.display();
     seconds = 100;
-  }
+  }*/
 }
 
 void IRAM_ATTR checkConnection()
 {
-  display.clear();
+  
   while (!ESP_BT.hasClient())
   {
     if (!errorShowed)
     {
-      display.drawString(40, 0, "No");
-      display.drawString(0, 30, "Connection");
+      display.clear();
+      display.drawString(50, 0, "No");
+      display.drawString(10, 30, "Connection");
       display.display();
       errorShowed = true;
     }
-    //Serial.print(".");
-
-    //delay(100);
   }
+  
   display.clear();
   display.drawString(20, 0, "Client");
-  display.drawString(0, 30, "Connected");
+  display.drawString(10, 30, "Connected");
   display.display();
 
   Serial.println("Device connected.");
@@ -85,9 +84,9 @@ void setup()
   display.flipScreenVertically();
   display.setFont(ArialMT_Plain_24);
 
-  display.drawString(50, 0, "No");
+  /*display.drawString(50, 0, "No");
   display.drawString(10, 30, "connection");
-  display.display();
+  display.display();*/
   /*display.drawString(0, 0, "ACETONE");
   display.drawString(20, 40, "BATH");
   display.display();*/
@@ -201,16 +200,6 @@ void loop()
       digitalWrite(FAN, HIGH);
     }
 
-    /*if (tempSensor < temp)
-    {
-      digitalWrite(HEATER, HIGH);
-      Serial.println("+");
-    }
-    else
-    {
-      digitalWrite(HEATER, LOW);
-      Serial.println("-");
-    }*/
     heaterPower = ((temp - tempSensor) * 10);
     if (temp - tempSensor < 1)
     {
@@ -225,6 +214,20 @@ void loop()
     Serial.println(heaterPower);
     ledcWrite(heaterChannel, heaterPower);
   }
+  else if (seconds <= 0)
+  {
+    processRunning = false;
+    fanRunning = false;
+    digitalWrite(FAN, LOW);
+    Serial.println("Done");
+    ////display.clear();
+    display.drawString(20, 20, "Finished");
+    display.display();
+    seconds = 0;
+    //delay(10000);
+    /*if(!ESP_BT.hasClient())
+    checkConnection();*/
+  }
   else
   {
     //digitalWrite(HEATER, LOW);
@@ -234,9 +237,9 @@ void loop()
 
   if (!ESP_BT.hasClient() && !processRunning)
   {
-    errorShowed=false;
+    errorShowed = false;
     checkConnection();
   }
 
-  delay(500);
+  delay(1000);
 }
