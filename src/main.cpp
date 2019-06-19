@@ -26,48 +26,9 @@ bool fanRunning = false;
 bool errorShowed = false;
 unsigned int heaterPower = 0;
 
-void IRAM_ATTR onTimer()
-{
-  if (seconds > 0)
-  {
-    seconds--;
-  }
-  /*else if (processRunning && seconds == 0)
-  {
-    processRunning = false;
-    fanRunning = false;
-    digitalWrite(FAN, LOW);
-    Serial.println("Done");
-    //display.clear();
-    display.drawString(20, 0, "Finished");
-    display.display();
-    seconds = 100;
-  }*/
-}
+void IRAM_ATTR onTimer();
 
-void IRAM_ATTR checkConnection()
-{
-  
-  while (!ESP_BT.hasClient())
-  {
-    if (!errorShowed)
-    {
-      display.clear();
-      display.drawString(50, 0, "No");
-      display.drawString(10, 30, "Connection");
-      display.display();
-      errorShowed = true;
-    }
-  }
-  
-  display.clear();
-  display.drawString(20, 0, "Client");
-  display.drawString(10, 30, "Connected");
-  display.display();
-
-  Serial.println("Device connected.");
-  ESP_BT.println("R");
-}
+void IRAM_ATTR checkConnection();
 
 void setup()
 {
@@ -79,17 +40,11 @@ void setup()
   timerAttachInterrupt(timer, &onTimer, true);
   timerAlarmWrite(timer, 1000000, true);
   timerAlarmEnable(timer);
+  timerStop(timer);
 
   display.init();
   display.flipScreenVertically();
   display.setFont(ArialMT_Plain_24);
-
-  /*display.drawString(50, 0, "No");
-  display.drawString(10, 30, "connection");
-  display.display();*/
-  /*display.drawString(0, 0, "ACETONE");
-  display.drawString(20, 40, "BATH");
-  display.display();*/
 
   ledcSetup(heaterChannel, freq, resolution);
   ledcAttachPin(HEATER, heaterChannel);
@@ -105,7 +60,6 @@ void loop()
 {
   display.clear();
   tempSensor = (analogRead(TEMP_SENS) / 4096.0) * 500.0;
-  //tempSensor = analogRead(TEMP_SENS) /9.31;
 
   if (ESP_BT.available())
   {
@@ -119,8 +73,6 @@ void loop()
 
       if (command.startsWith("T"))
       {
-        /*display.drawString(25, 10, "START");
-        display.display();*/
 
         command.setCharAt(command.lastIndexOf("T"), ' ');
         command.trim();
@@ -132,16 +84,15 @@ void loop()
         command.trim();
         duration = command.toInt();
         seconds = duration * 60;
-        if (!timerStarted(timer))
-        {
-          timerStart(timer);
-        }
       }
       if (command == "s")
       {
         processRunning = false;
         fanRunning = false;
-        digitalWrite(FAN, LOW);
+        
+          timerStop(timer);
+          digitalWrite(FAN,LOW);
+        
         seconds = 100;
         tempSensor = 0;
 
@@ -155,6 +106,11 @@ void loop()
         fanRunning = false;
         digitalWrite(FAN, LOW);
         timerStop(timer);
+        if(timerStarted(timer))
+        {
+          timerStop(timer);
+          digitalWrite(FAN,LOW);
+        }
 
         display.drawString(30, 20, "PAUSE");
         display.display();
@@ -165,6 +121,7 @@ void loop()
         processRunning = true;
         fanRunning = false;
         digitalWrite(FAN, HIGH);
+        if(!timerStarted(timer))
         timerStart(timer);
         Serial.println("Continue");
       }
@@ -175,7 +132,11 @@ void loop()
 
   if (processRunning == true && seconds > 0)
   {
-
+     if(tempSensor>=temp-1&&!timerStarted(timer))
+    {
+      timerStart(timer);
+      digitalWrite(FAN,HIGH);
+    }
     Serial.print(seconds);
     Serial.println(" sec");
     Serial.print(tempSensor);
@@ -220,19 +181,15 @@ void loop()
     fanRunning = false;
     digitalWrite(FAN, LOW);
     Serial.println("Done");
-    ////display.clear();
     display.drawString(20, 20, "Finished");
     display.display();
     seconds = 0;
-    //delay(10000);
-    /*if(!ESP_BT.hasClient())
-    checkConnection();*/
   }
   else
   {
-    //digitalWrite(HEATER, LOW);
+
     ledcWrite(heaterChannel, 0);
-    //digitalWrite(FAN, LOW);
+    digitalWrite(FAN, LOW);
   }
 
   if (!ESP_BT.hasClient() && !processRunning)
@@ -242,4 +199,36 @@ void loop()
   }
 
   delay(1000);
+}
+
+void IRAM_ATTR onTimer()
+{
+  if (seconds > 0)
+  {
+    seconds--;
+  }
+}
+
+void IRAM_ATTR checkConnection()
+{
+  
+  while (!ESP_BT.hasClient())
+  {
+    if (!errorShowed)
+    {
+      display.clear();
+      display.drawString(50, 0, "No");
+      display.drawString(10, 30, "Connection");
+      display.display();
+      errorShowed = true;
+    }
+  }
+  
+  display.clear();
+  display.drawString(20, 0, "Client");
+  display.drawString(10, 30, "Connected");
+  display.display();
+
+  Serial.println("Device connected.");
+  ESP_BT.println("R");
 }
