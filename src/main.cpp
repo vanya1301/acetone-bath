@@ -175,15 +175,16 @@ void loop()
     Serial.println(heaterPower);
     ledcWrite(heaterChannel, heaterPower);
   }
-  else if (seconds <= 0)
+  else if (seconds <= 0 && seconds)
   {
     processRunning = false;
     fanRunning = false;
     digitalWrite(FAN, LOW);
     Serial.println("Done");
+    timerStop(timer);
     display.drawString(20, 20, "Finished");
     display.display();
-    seconds = 0;
+    seconds = -2;
   }
   else
   {
