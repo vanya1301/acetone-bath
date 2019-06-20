@@ -19,11 +19,12 @@ const int heaterChannel = 0;
 const int resolution = 8;
 int temp = 0;
 int duration = 0;
-int tempSensor = 1;
+float tempSensor = 1;
 int seconds = 100;
 bool processRunning = false;
 bool fanRunning = false;
 bool errorShowed = false;
+bool paused = false;
 unsigned int heaterPower = 0;
 
 void IRAM_ATTR onTimer();
@@ -60,6 +61,7 @@ void loop()
 {
   display.clear();
   tempSensor = (analogRead(TEMP_SENS) / 4096.0) * 500.0;
+  //tempSensor = ((analogRead(TEMP_SENS)/819.2) - 0.5) / 0.01;
 
   if (ESP_BT.available())
   {
@@ -89,10 +91,11 @@ void loop()
       {
         processRunning = false;
         fanRunning = false;
-        
-          timerStop(timer);
-          digitalWrite(FAN,LOW);
-        
+        paused = false;
+
+        timerStop(timer);
+        digitalWrite(FAN, LOW);
+
         seconds = 100;
         tempSensor = 0;
 
@@ -102,14 +105,15 @@ void loop()
       }
       if (command == "P")
       {
+        paused = true;
         processRunning = false;
         fanRunning = false;
         digitalWrite(FAN, LOW);
         timerStop(timer);
-        if(timerStarted(timer))
+        if (timerStarted(timer))
         {
           timerStop(timer);
-          digitalWrite(FAN,LOW);
+          digitalWrite(FAN, LOW);
         }
 
         display.drawString(30, 20, "PAUSE");
@@ -118,11 +122,12 @@ void loop()
       }
       if (command == "C")
       {
+        paused = false;
         processRunning = true;
         fanRunning = false;
         digitalWrite(FAN, HIGH);
-        if(!timerStarted(timer))
-        timerStart(timer);
+        if (!timerStarted(timer))
+          timerStart(timer);
         Serial.println("Continue");
       }
 
@@ -132,14 +137,14 @@ void loop()
 
   if (processRunning == true && seconds > 0)
   {
-     if(tempSensor>=temp-1&&!timerStarted(timer))
+    if (tempSensor >= temp - 1 && !timerStarted(timer))
     {
       timerStart(timer);
-      digitalWrite(FAN,HIGH);
+      digitalWrite(FAN, HIGH);
     }
     Serial.print(seconds);
     Serial.println(" sec");
-    Serial.print(tempSensor);
+    Serial.println(tempSensor);
 
     ESP_BT.print("t");
     ESP_BT.println((int)tempSensor);
@@ -175,7 +180,7 @@ void loop()
     Serial.println(heaterPower);
     ledcWrite(heaterChannel, heaterPower);
   }
-  else if (seconds <= 0 && seconds)
+  else if (seconds <= 1 && seconds != -2)
   {
     processRunning = false;
     fanRunning = false;
@@ -188,7 +193,6 @@ void loop()
   }
   else
   {
-
     ledcWrite(heaterChannel, 0);
     digitalWrite(FAN, LOW);
   }
@@ -198,7 +202,6 @@ void loop()
     errorShowed = false;
     checkConnection();
   }
-
   delay(1000);
 }
 
@@ -212,7 +215,7 @@ void IRAM_ATTR onTimer()
 
 void IRAM_ATTR checkConnection()
 {
-  
+
   while (!ESP_BT.hasClient())
   {
     if (!errorShowed)
@@ -224,12 +227,23 @@ void IRAM_ATTR checkConnection()
       errorShowed = true;
     }
   }
-  
-  display.clear();
-  display.drawString(20, 0, "Client");
-  display.drawString(10, 30, "Connected");
-  display.display();
 
-  Serial.println("Device connected.");
-  ESP_BT.println("R");
+  display.clear();
+
+  if (paused)
+  {
+    ESP_BT.println("RP");
+    Serial.println("Device connected.");
+    Serial.println("SEND PAUSED");
+    display.drawString(30, 20, "PAUSE");
+    display.display();
+  }
+  else
+  {
+    ESP_BT.println("R");
+    Serial.println("Device connected.");
+    display.drawString(20, 0, "Client");
+    display.drawString(10, 30, "Connected");
+    display.display();
+  }
 }
