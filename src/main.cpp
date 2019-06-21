@@ -154,7 +154,7 @@ void loop()
     display.drawString(0, 0, "Temp:" + String((int)tempSensor) + " °C");
 
     if (seconds > 60)
-      display.drawString(0, 30, "Time:" + String(seconds / 60 + 1) + " min.");
+      display.drawString(0, 30, "Time:" + String(seconds / 60) + " min.");
     else
       display.drawString(0, 30, "Time:" + String(seconds) + " sec.");
 
@@ -171,7 +171,7 @@ void loop()
     {
       heaterPower = 10;
     }
-    else if ((temp - tempSensor) * 10 > 255)
+    else if (heaterPower > 255)
     {
       heaterPower = 255;
     }
@@ -182,6 +182,7 @@ void loop()
   }
   else if (seconds <= 1 && seconds != -2)
   {
+    ESP_BT.println("f");
     processRunning = false;
     fanRunning = false;
     digitalWrite(FAN, LOW);
@@ -228,20 +229,22 @@ void IRAM_ATTR checkConnection()
     }
   }
 
-  display.clear();
-
   if (paused)
   {
+    
     ESP_BT.println("RP");
     Serial.println("Device connected.");
     Serial.println("SEND PAUSED");
+    display.clear();
     display.drawString(30, 20, "PAUSE");
     display.display();
   }
   else
   {
+    
     ESP_BT.println("R");
     Serial.println("Device connected.");
+    display.clear();
     display.drawString(20, 0, "Client");
     display.drawString(10, 30, "Connected");
     display.display();
