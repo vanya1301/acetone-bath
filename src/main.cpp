@@ -34,7 +34,7 @@ void IRAM_ATTR checkConnection();
 void setup()
 {
   Serial.begin(115200);
-  ESP_BT.begin("ESP32_LED_Control");
+  ESP_BT.begin("Acetone bath");
   Serial.println("Bluetooth Device is Ready to Pair");
 
   timer = timerBegin(0, 80, true);
@@ -166,10 +166,10 @@ void loop()
       digitalWrite(FAN, HIGH);
     }
 
-    heaterPower = ((temp - tempSensor) * 10);
-    if (temp - tempSensor < 1)
+    heaterPower = ((temp - tempSensor) * temp/2);
+    if ((temp-1) - tempSensor < 1)
     {
-      heaterPower = 10;
+      heaterPower = 0;
     }
     else if (heaterPower > 255)
     {
